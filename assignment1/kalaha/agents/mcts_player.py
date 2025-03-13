@@ -12,10 +12,6 @@ class MCTSPlayer(Player):
     def __init__(self, iterations: int = 1000, exploration_weight: float = 1.0, log: bool = True):
         """
         Initialize the MCTS player.
-        
-        Parameters:
-        iterations (int): Number of MCTS iterations to perform.
-        exploration_weight (float): Weight of exploration term in UCT formula.
         """
         self.iterations = iterations
         self.exploration_weight = exploration_weight
