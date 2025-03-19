@@ -9,7 +9,7 @@ class MCTSPlayer(Player):
     """
     Monte Carlo Tree Search player implementation.
     """
-    def __init__(self, iterations: int = 1000, exploration_weight: float = 1.0, log: bool = True):
+    def __init__(self, iterations: int = 100, exploration_weight: float = 1.0, log: bool = True):
         """
         Initialize the MCTS player.
         """
@@ -34,8 +34,11 @@ class MCTSPlayer(Player):
             node = root
 
             # while node is fully expanded and not terminal
+            x = 0
             while node.untried_moves == [] and node.children:
-                node = node.uct_select_child(self.exploration_weight)
+                is_even = x % 2 == 0
+                node = node.uct_select_child(is_even, self.exploration_weight)
+                x += 1
 
             # 2. expansion phase: Add a child node if possible)
             if node.untried_moves:

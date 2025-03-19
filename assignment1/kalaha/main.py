@@ -31,19 +31,19 @@ def select_ai_difficulty() -> int:
     Returns number of MCTS iterations.
     """
     print("Select AI difficulty:")
-    print("1. Easy (500 iterations)")
-    print("2. Medium (1000 iterations)")
-    print("3. Hard (3000 iterations)")
+    print("1. Easy (1000 iterations)")
+    print("2. Medium (10000 iterations)")
+    print("3. Hard (100000 iterations)")
     
     while True:
         try:
             difficulty = int(input("Enter difficulty (1-3): "))
             if difficulty == 1:
-                return 500
-            elif difficulty == 2:
                 return 1000
+            elif difficulty == 2:
+                return 10000
             elif difficulty == 3:
-                return 3000
+                return 100000
             print("Please enter a number between 1 and 3.")
         except ValueError:
             print("Please enter a valid number.")

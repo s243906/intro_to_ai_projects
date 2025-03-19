@@ -16,12 +16,13 @@ class MCTSNode:
     def __init__(self, board: KalahaBoard, player: int, parent=None, move=None):
         """Initialize a new MCTS node."""
         self.board = board
-        self.player = player  # player who will make the next move
+        self.player = player  
         self.parent = parent
-        self.move = move  # move that led to this node
+        self.move = move  
         self.children: List['MCTSNode'] = []
-        self.wins = 0 # number of wins per node
-        self.visits = 0 # number of visits per node
+        self.wins = 0
+        self.visits = 0
+        self.visits = 0
         self.untried_moves = self._get_untried_moves()
     
     def _get_untried_moves(self) -> List[int]:
@@ -56,7 +57,7 @@ class MCTSNode:
         self.visits += 1
         self.wins += result
     
-    def uct_select_child(self, exploration_weight: float = 1.0) -> 'MCTSNode':
+    def uct_select_child(self, is_even: bool, exploration_weight: float = 1.0) -> 'MCTSNode':
         """ Select child node with highest UCT value. """
         log_visits = math.log(self.visits)
         
@@ -67,7 +68,10 @@ class MCTSNode:
             exploration = math.sqrt(2 * log_visits / child.visits) if child.visits > 0 else float('inf')
             return win_rate + exploration_weight * exploration
         
-        return max(self.children, key=uct)
+        if is_even:
+            return max(self.children, key=uct)
+        
+        return min(self.children, key=uct)
     
     def is_terminal(self) -> bool:
         """ Check if the node represents a terminal state. """
