@@ -33,6 +33,7 @@ class MCTSPlayer(Player):
             # 1. selection phase: select a node to expand
             node = root
 
+            x=0
             # while node is fully expanded and not terminal
             while node.untried_moves == [] and node.children:
                 is_even = x % 2 == 0
