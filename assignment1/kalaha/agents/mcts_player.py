@@ -32,7 +32,7 @@ class MCTSPlayer(Player):
         for _ in range(self.iterations):
             # 1. selection phase: select a node to expand
             node = root
-
+            
             x=0
             # while node is fully expanded and not terminal
             while node.untried_moves == [] and node.children:
@@ -44,14 +44,19 @@ class MCTSPlayer(Player):
             if node.untried_moves:
                 move = random.choice(node.untried_moves)
                 node = node.add_child(move)
-            
             # simulation phase: Perform a random rollout
             result = node.rollout()
             
             # backpropagation phase: Update statistics
             while node:
-                node.update(result)
-                result = 1 - result
+                if result == -1:
+                    new_result = 0
+                    node.update(new_result)
+                else:
+                    node.update(result)
+                    if node.parent:
+                        if node.player != node.parent.player:
+                            result = 1 - result
                 node = node.parent
         
         # return the move with the highest visit count

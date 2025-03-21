@@ -89,7 +89,7 @@ def configure_game(mode: int) -> KalahaGame:
 
     elif mode == 4:  # AI vs AI
         iterations = 1000
-        iterations2 = 200
+        iterations2 = 10000
         exp_weight = math.sqrt(2)
         exp_weight_2 = math.sqrt(2)
         players = [MCTSPlayer(iterations, exploration_weight=exp_weight), MCTSPlayer(iterations2, exploration_weight=exp_weight_2)]
@@ -117,9 +117,10 @@ def one_game():
 
 def main():
     results = []
-    for i in range(10):
+    for i in range(20):
         game = one_game()
         player_win = game.get_winner()
+        
         # score = game.board.get_score()
         results.append((player_win))
     print(results)
