@@ -54,6 +54,7 @@ class MCTSNode:
     def update(self, result: float) -> None:
         """ Update node statistics. """
         self.visits += 1
+        # print(f"result: {result}")
         self.wins += result
     
     def uct_select_child(self, is_even: bool, exploration_weight: float = 1.0) -> 'MCTSNode':
@@ -107,7 +108,7 @@ class MCTSNode:
         
         # return the result relative to the original player
         if winner == -1:  # tie case
-            return 0.5
+            return 0.0
         elif winner == self.parent.player:  # win for the original player
             return 1.0
         else:  # loss for the original player

@@ -51,6 +51,7 @@ class MCTSPlayer(Player):
             # backpropagation phase: Update statistics
             while node:
                 node.update(result)
+                result = 1 - result
                 node = node.parent
         
         # return the move with the highest visit count
