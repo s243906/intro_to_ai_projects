@@ -4,18 +4,23 @@ from player import Player
 from agents.mcts_node import MCTSNode
 import copy
 import random
+import math
 
 class MCTSPlayer(Player):
     """
     Monte Carlo Tree Search player implementation.
     """
-    def __init__(self, iterations: int = 100, exploration_weight: float = 1.0, log: bool = True):
+    def __init__(self, iterations: int = 100, exploration_weight: float = None, visualize_stats: bool = False):
         """
         Initialize the MCTS player.
         """
         self.iterations = iterations
-        self.exploration_weight = exploration_weight
-        self.log = log
+        self.visualize_stats = visualize_stats
+
+        if exploration_weight:
+            self.exploration_weight = exploration_weight
+        else:
+            self.exploration_weight = math.sqrt(2)
     
     def get_move(self, board: KalahaBoard, player_id: int) -> int:
         """
@@ -34,11 +39,8 @@ class MCTSPlayer(Player):
             node = root
 
             # while node is fully expanded and not terminal
-            x = 0
             while node.untried_moves == [] and node.children:
-                is_even = x % 2 == 0
-                node = node.uct_select_child(is_even, self.exploration_weight)
-                x += 1
+                node = node.uct_select_child(self.exploration_weight)
 
             # 2. expansion phase: Add a child node if possible)
             if node.untried_moves:
@@ -51,8 +53,24 @@ class MCTSPlayer(Player):
             # backpropagation phase: Update statistics
             while node:
                 node.update(result)
+                if result == -1:
+                    # tie = don't update wins for anyone
+                    new_result = 0
+                    node.update(new_result)
+                else:
+                    node.update(result)
+                    if node.parent:
+                        # check for extra turn case
+                        if node.player != node.parent.player:
+                            result = 1 - result
+
                 node = node.parent
         
+        if self.visualize_stats:
+            children = sorted(root.children, key=lambda c: c.visits, reverse=True)
+            for c in children:
+                print(f"move: {c.move}, visits: {c.visits}")
+
         # return the move with the highest visit count
         best_child = max(root.children, key=lambda c: c.visits)
 
