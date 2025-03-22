@@ -59,12 +59,14 @@ def configure_game(mode: int) -> KalahaGame:
     
     elif mode == 2:  # Human vs AI
         iterations = select_ai_difficulty()
-        players = [HumanPlayer(), MCTSPlayer(iterations)]
+        visualize_stats = False
+        players = [HumanPlayer(), MCTSPlayer(iterations, visualize_stats=visualize_stats)]
         return KalahaGame(players)
     
     elif mode == 3:  # AI vs Human
         iterations = select_ai_difficulty()
-        players = [MCTSPlayer(iterations), HumanPlayer()]
+        visualize_stats = False
+        players = [MCTSPlayer(iterations, visualize_stats=visualize_stats), HumanPlayer()]
         return KalahaGame(players)
 
 def main():

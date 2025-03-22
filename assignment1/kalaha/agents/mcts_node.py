@@ -22,7 +22,6 @@ class MCTSNode:
         self.children: List['MCTSNode'] = []
         self.wins = 0
         self.visits = 0
-        self.visits = 0
         self.untried_moves = self._get_untried_moves()
     
     def _get_untried_moves(self) -> List[int]:
@@ -57,7 +56,7 @@ class MCTSNode:
         self.visits += 1
         self.wins += result
     
-    def uct_select_child(self, is_even: bool, exploration_weight: float = 1.0) -> 'MCTSNode':
+    def uct_select_child(self, exploration_weight: float = 1.0) -> 'MCTSNode':
         """ Select child node with highest UCT value. """
         log_visits = math.log(self.visits)
         
@@ -65,13 +64,10 @@ class MCTSNode:
             # exploitation term
             win_rate = child.wins / child.visits if child.visits > 0 else 0
             # exploration term
-            exploration = math.sqrt(2 * log_visits / child.visits) if child.visits > 0 else float('inf')
+            exploration = math.sqrt(log_visits / child.visits) if child.visits > 0 else float('inf')
             return win_rate + exploration_weight * exploration
         
-        if is_even:
-            return max(self.children, key=uct)
-        
-        return min(self.children, key=uct)
+        return max(self.children, key=uct)
     
     def is_terminal(self) -> bool:
         """ Check if the node represents a terminal state. """
@@ -108,7 +104,7 @@ class MCTSNode:
         
         # return the result relative to the original player
         if winner == -1:  # tie case
-            return 0.5
+            return -1
         elif winner == self.parent.player:  # win for the original player
             return 1.0
         else:  # loss for the original player
