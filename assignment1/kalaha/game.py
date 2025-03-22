@@ -46,9 +46,9 @@ class KalahaGame:
             print(f"Invalid move: {pit}")
             pit = player_obj.get_move(self.board, player)
         
-        print(f"Player {player} chose pit {pit}")
+        #print(f"Player {player} chose pit {pit}")
         extra_turn = KalahaRules.make_move(self.board, player, pit)
-        self.print_board()
+        #self.print_board()
         
         # check if game is over
         if self.is_game_over():
@@ -60,18 +60,18 @@ class KalahaGame:
         if not extra_turn:
             self.current_player = 1 - self.current_player
         else:
-            print(f"Player {player} gets another turn!")
-        
+            #print(f"Player {player} gets another turn!")
+            pass
         return False
     
     def play_game(self) -> None:
         """ Play a full game of Kalaha. """
         print("Welcome to Kalaha!")
-        self.print_board()
+        #self.print_board()
         
         game_over = False
         while not game_over:
-            print("-" * 50)
+            #print("-" * 50)
             try:
                 game_over = self.play_turn()
             except KeyboardInterrupt:

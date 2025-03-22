@@ -33,12 +33,9 @@ class MCTSPlayer(Player):
             # 1. selection phase: select a node to expand
             node = root
             
-            x=0
             # while node is fully expanded and not terminal
             while node.untried_moves == [] and node.children:
-                is_even = x % 2 == 0
-                node = node.uct_select_child(is_even, self.exploration_weight)
-                x += 1
+                node = node.uct_select_child(self.exploration_weight)
 
             # 2. expansion phase: Add a child node if possible)
             if node.untried_moves:
@@ -58,7 +55,7 @@ class MCTSPlayer(Player):
                         if node.player != node.parent.player:
                             result = 1 - result
                 node = node.parent
-        
+
         # return the move with the highest visit count
         best_child = max(root.children, key=lambda c: c.visits)
 
