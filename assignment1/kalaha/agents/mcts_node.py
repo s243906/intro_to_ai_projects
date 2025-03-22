@@ -64,7 +64,7 @@ class MCTSNode:
             # exploitation term
             win_rate = child.wins / child.visits if child.visits > 0 else 0
             # exploration term
-            exploration = math.sqrt(2 * log_visits / child.visits) if child.visits > 0 else float('inf')
+            exploration = math.sqrt(log_visits / child.visits) if child.visits > 0 else float('inf')
             return win_rate + exploration_weight * exploration
         
         return max(self.children, key=uct)
