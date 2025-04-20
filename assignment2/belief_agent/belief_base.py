@@ -1,55 +1,238 @@
 """
-    A module that implements a belief base and the functions to manipulate it.
+Belief Base module for belief revision.
+Handles the storage and management of beliefs.
 """
+from itertools import combinations
+from logic import parse_formula, to_cnf, check_entailment, negate_formula, is_literal
+
 class BeliefBase:
-    """ Belief Base class to store and manage beliefs. """
+    """
+    A class representing a belief base that can be revised.
+    
+    Attributes:
+        beliefs (list): List of belief formulas in the belief base
+        priorities (dict): Dictionary mapping beliefs to their priority values
+        next_priority (float): The next priority value to assign
+    """
+    
     def __init__(self):
-        """ Initialize the belief base with an empty list of beliefs. """
-        self.beliefs = []
-
-        # define valid beliefs with their description
-        # note: values() are only for documentation purposes
-        self.valid_beliefs = {
-            "&" : "logical AND",
-            "|" : "logical OR",
-            "~": "logical not (negation)",
-            ">>" : "logical implication",
-            "<<>>": "logical biconditional (if and only if)"
-        }
-    
-    def add_belief(self, belief: str) -> None:
-        """ Add a belief to the belief base. """
-        belief = self.parse_belief(belief)
-
-        self.beliefs.append(belief)
-        # TODO: add order, possibly unparsed
-    
-    def parse_belief(self, belief: str) -> str:
-        """ Verify and parse the belief string. """
-        # check 1: if belief is empty
-        if not belief:
-            raise ValueError("Belief cannot be empty.")
-
-        # check 2: if belief contains only one character
-        if belief.isalpha() and len(belief) == 1:
-            return belief
+        """Initialize an empty belief base."""
+        self.beliefs = []  # List of beliefs in string form
+        self.priorities = {}  # Maps beliefs to priority values
+        self.next_priority = 1.0  # Priority counter
         
-        # check 3: if belief contains only valid characters
-        valid_chars = set(self.valid_beliefs.keys())
-        for char in belief:
-            if char not in valid_chars and not char.isalpha():
-                raise ValueError(f"Invalid character '{char}' in belief.")
+    def add_belief(self, belief: str) -> bool:
+        """
+        Add a belief to the belief base (expansion).
+        """
+        # parse and validate belief
+        parsed_belief = parse_formula(belief)
+        if parsed_belief is None:
+            return False
         
-        # check 4: if biconditional: TODO: maybe there's a better way to handle this
+        # add the belief if it's not already in the belief base
+        if parsed_belief not in self.beliefs:
+            self.beliefs.append(parsed_belief)
+            
+            # assign priority based on complexity of the formula
+            priority = self._calculate_priority(parsed_belief)
+            self.priorities[parsed_belief] = priority
+            
+            print(f"Added belief: {parsed_belief} with priority {priority}")
+            return True
+        
+        return False
+    
+    def expand(self, belief: str) -> bool:
+        """
+        Expand the belief base with a new belief.
+        This is a simple addition without checking for consistency.
+        """
+        return self.add_belief(belief)
+    
+    def revise(self, belief):
+        """
+        Revise the belief base with a new belief.
+        This ensures the new belief is accepted while maintaining consistency.
+        
+        Args:
+            belief (str): The belief to add
+            
+        Returns:
+            bool: True if revision was successful, False otherwise
+        """
+        # Parse and validate the belief
+        parsed_belief = parse_formula(belief)
+        if parsed_belief is None:
+            return False
+        
+        # If the belief is already entailed, no need to revise
+        if self.entails(parsed_belief):
+            print(f"Belief '{parsed_belief}' is already entailed by the belief base.")
+            return True
+        
+        # If the negation of the belief is entailed, contraction is needed
+        if self.entails(negate_formula(parsed_belief)):
+            print(f"The negation of '{parsed_belief}' is entailed. Contraction needed.")
+            self.contract(parsed_belief)
+        
+        # Now expand with the new belief
+        return self.add_belief(parsed_belief)
+    
+    def contract(self, belief):
+        """
+        Contract the belief base to remove a belief.
+        Uses partial meet contraction based on priorities.
+        
+        Args:
+            belief (str): The belief to remove
+            
+        Returns:
+            bool: True if contraction was successful, False otherwise
+        """
+        # Parse and validate the belief
+        parsed_belief = parse_formula(belief)
+        if parsed_belief is None:
+            return False
+        
+        # If the belief is not entailed, no need to contract
+        if not self.entails(parsed_belief):
+            print(f"Belief '{parsed_belief}' is not entailed. No contraction needed.")
+            return True
+        
+        # Find remainders (maximal subsets that don't entail the belief)
+        remainders = self._find_remainders(parsed_belief)
+        
+        if not remainders:
+            print("Could not find valid remainders for contraction.")
+            return False
+        
+        # Select the remainder with the highest priority sum
+        selected_remainder = self._select_remainder(remainders)
+        
+        # Update the belief base
+        self.beliefs = selected_remainder
+        
+        # Clean up priorities for beliefs that are no longer in the base
+        self._update_priorities()
+        
+        print(f"Contracted '{parsed_belief}'. New belief base size: {len(self.beliefs)}")
+        return True
+    
+    def entails(self, belief: str) -> bool:
+        """
+        Check if the belief base entails a given belief.
+        """
+        # Convert belief base to CNF
+        kb_cnf = []
+        for b in self.beliefs:
+            kb_cnf.extend(to_cnf(b))
+        
+        # Check entailment using resolution
+        return check_entailment(kb_cnf, belief)
+    
+    def display(self):
+        """Display the current belief base with priorities."""
+        if not self.beliefs:
+            print("Belief base is empty.")
+            return
+        
+        print("\nCurrent Belief Base:")
+        print("-" * 50)
+        for belief in self.beliefs:
+            priority = self.priorities.get(belief, "N/A")
+            print(f"  {belief} (priority: {priority})")
+        print("-" * 50)
+    
+    def _calculate_priority(self, belief: str) -> float:
+        """
+        Calculate priority value for a belief based on its complexity.
+        """
+        priority = self.next_priority
+
+
+        # this increases by 0.1 for each new belief to ensure newer beliefs have slightly higher priority than older ones
+        # (if all else is equal)
+        self.next_priority += 0.1
+        
+        if is_literal(belief):
+            return priority
+        
+        # more complex formulas get higher priority
+        if "&" in belief:
+            priority += 1.0
+        if "|" in belief:
+            priority += 0.5
+        if "=>" in belief:
+            priority += 0.7
         if "<<>>" in belief:
-            parts = belief.split("<<>>")
-
-            if len(parts) != 2:
-                print(f"Complex biconditional chains not supported: {belief}")
-                raise ValueError("Invalid biconditional format.")
-                
-            # create a conjunction: (A >> B) & (B >> A): TODO: verify that
-            return "(" + parts[0] + ">>" + parts[1] + ") & (" + parts[1] + ">>" + parts[0] + ")"
+            priority += 1.2
+        
+        return priority
     
-        # Return other valid formulas unchanged
-        return belief
+    def _find_remainders(self, belief):
+        """
+        Find all maximal subsets of the belief base that don't entail the belief.
+        
+        Args:
+            belief (str): The belief to find remainders for
+            
+        Returns:
+            list: List of remainders (each is a list of beliefs)
+        """
+        remainders = []
+        
+        # Generate all possible subsets of the beliefs
+        for i in range(len(self.beliefs), 0, -1):
+            for subset in combinations(self.beliefs, i):
+                subset_list = list(subset)
+                
+                # Check if this subset entails the belief
+                kb_cnf = []
+                for b in subset_list:
+                    kb_cnf.extend(to_cnf(b))
+                
+                if not check_entailment(kb_cnf, belief):
+                    # This is a potential remainder
+                    remainders.append(subset_list)
+            
+            # If we found remainders at this level, stop looking
+            if remainders:
+                break
+        
+        return remainders
+    
+    def _select_remainder(self, remainders):
+        """
+        Select a remainder based on priorities.
+        
+        Args:
+            remainders (list): List of remainders to select from
+            
+        Returns:
+            list: The selected remainder
+        """
+        if not remainders:
+            return []
+        
+        # Calculate total priority for each remainder
+        remainder_priorities = {}
+        for i, remainder in enumerate(remainders):
+            total_priority = sum(self.priorities.get(belief, 0) for belief in remainder)
+            remainder_priorities[i] = total_priority
+        
+        # Select the remainder with the highest total priority
+        selected_index = max(remainder_priorities, key=remainder_priorities.get)
+        
+        return remainders[selected_index]
+    
+    def _update_priorities(self):
+        """Update the priorities dictionary to only contain current beliefs."""
+        new_priorities = {}
+        for belief in self.beliefs:
+            if belief in self.priorities:
+                new_priorities[belief] = self.priorities[belief]
+            else:
+                new_priorities[belief] = self._calculate_priority(belief)
+        
+        self.priorities = new_priorities

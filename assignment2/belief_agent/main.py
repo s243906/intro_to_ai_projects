@@ -1,29 +1,82 @@
 """
-    A module that retrieves the current state of the world and the agent's beliefs.
+Main entry point for the belief revision system.
 """
-def print_options():
-    """Print the options available to the user."""
-    print("Options:")
-    print("1. Add beliefs to the agent")
-    print("2. Modify the beliefs of the agent")
-    print("3. Remove beliefs from the agent")
+
+from belief_base import BeliefBase
+from revision import BeliefRevision
+
+def display_menu():
+    """Display the main menu options."""
+    print("\n====== Belief Revision System ======")
+    print("1. Add a belief (Expansion)")
+    print("2. Revise belief base")
+    print("3. Contract belief base")
+    print("4. Display belief base")
+    print("5. Check entailment")
+    print("6. Verify AGM postulates")
+    print("7. Exit")
+    print("===================================")
 
 def main():
-    """Main function to run the belief agent."""
-    print("Welcome to the Belief Base Agent!")
-    print("You can add, modify, or remove beliefs.")
-    print_options()
-
+    """Main function for the belief revision system."""
+    print("Welcome to the Belief Revision System!")
+    print("This system allows you to add, revise, and query beliefs.")
+    print("Beliefs should be entered in propositional logic format.")
+    print("Operators: & (AND), | (OR), ~ (NOT), => (IMPLIES), <<>> (BICONDITIONAL)")
+    
+    belief_base = BeliefBase()
+    revision = BeliefRevision()
+    
     while True:
-        choice = input("Enter your choice (1-3) or 'q' to quit: ")
-        if int(choice) == 1:
-            # Add beliefs
-            pass
-        elif int(choice) == 2:
-            # Modify beliefs
-            pass
-        elif int(choice) == 3:
-            # Remove beliefs
-            pass
+        display_menu()
+        choice = input("Enter your choice (1-7): ").strip()
+        
+        if choice == "1":
+            belief = input("Enter a belief to add: ").strip()
+            if revision.expand(belief_base, belief):
+                print("Belief added successfully.")
+            else:
+                print("Failed to add belief.")
+                
+        elif choice == "2":
+            belief = input("Enter a belief to revise with: ").strip()
+            if revision.revise(belief_base, belief):
+                print("Belief base revised successfully.")
+            else:
+                print("Failed to revise belief base.")
+                
+        elif choice == "3":
+            belief = input("Enter a belief to contract: ").strip()
+            if revision.contract(belief_base, belief):
+                print("Belief contracted successfully.")
+            else:
+                print("Failed to contract belief.")
+                
+        elif choice == "4":
+            belief_base.display()
+            
+        elif choice == "5":
+            belief = input("Enter a belief to check entailment: ").strip()
+            if belief_base.entails(belief):
+                print(f"The belief base entails '{belief}'.")
+            else:
+                print(f"The belief base does NOT entail '{belief}'.")
+                
+        elif choice == "6":
+            belief = input("Enter a belief to verify AGM postulates: ").strip()
+            results = revision.verify_agm_postulates(belief_base, belief)
+            print("\nAGM Postulates Verification:")
+            for postulate, result in results.items():
+                print(f"  {postulate}: {'Satisfied' if result is True else 'Not satisfied' if result is False else result}")
+                
+        elif choice == "7":
+            print("Thank you for using the Belief Revision System. Goodbye!")
+            break
+            
         else:
             print("Invalid choice. Please try again.")
+        
+        input("\nPress Enter to continue...")
+
+if __name__ == "__main__":
+    main()
