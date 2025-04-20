@@ -2,6 +2,7 @@
 Belief Base module for belief revision.
 Handles the storage and management of beliefs.
 """
+from typing import List
 from itertools import combinations
 from logic import parse_formula, to_cnf, check_entailment, negate_formula, is_literal
 
@@ -50,64 +51,54 @@ class BeliefBase:
         """
         return self.add_belief(belief)
     
-    def revise(self, belief):
+    def revise(self, belief: str) -> None:
         """
         Revise the belief base with a new belief.
         This ensures the new belief is accepted while maintaining consistency.
-        
-        Args:
-            belief (str): The belief to add
-            
-        Returns:
-            bool: True if revision was successful, False otherwise
+        Check revision.py for a detailed explanation.
         """
-        # Parse and validate the belief
         parsed_belief = parse_formula(belief)
         if parsed_belief is None:
             return False
         
-        # If the belief is already entailed, no need to revise
+        # if the belief is already entailed, no need to revise
         if self.entails(parsed_belief):
             print(f"Belief '{parsed_belief}' is already entailed by the belief base.")
             return True
         
-        # If the negation of the belief is entailed, contraction is needed
+        # if the negation of the belief is entailed, contraction is needed
         if self.entails(negate_formula(parsed_belief)):
             print(f"The negation of '{parsed_belief}' is entailed. Contraction needed.")
             self.contract(parsed_belief)
         
-        # Now expand with the new belief
+        # expand with the new belief
         return self.add_belief(parsed_belief)
     
-    def contract(self, belief):
+    def contract(self, belief: str) -> bool:
         """
         Contract the belief base to remove a belief.
         Uses partial meet contraction based on priorities.
-        
-        Args:
-            belief (str): The belief to remove
-            
-        Returns:
-            bool: True if contraction was successful, False otherwise
         """
-        # Parse and validate the belief
         parsed_belief = parse_formula(belief)
         if parsed_belief is None:
             return False
         
         # If the belief is not entailed, no need to contract
+        # example:
+        # let's say we want to contract r, and r is not entailed by our belief base (e.g. we have just p => q),
+        # then our belief base already doesn't believe r. There's nothing to remove or change.
         if not self.entails(parsed_belief):
             print(f"Belief '{parsed_belief}' is not entailed. No contraction needed.")
             return True
         
-        # Find remainders (maximal subsets that don't entail the belief)
+        # find remainders (maximal subsets that don't entail the belief)
         remainders = self._find_remainders(parsed_belief)
         
         if not remainders:
             print("Could not find valid remainders for contraction.")
             return False
         
-        # Select the remainder with the highest priority sum
+        # select the remainder with the highest priority sum
         selected_remainder = self._select_remainder(remainders)
         
         # Update the belief base
@@ -123,12 +114,12 @@ class BeliefBase:
         """
         Check if the belief base entails a given belief.
         """
-        # Convert belief base to CNF
+        # convert belief base to CNF
         kb_cnf = []
         for b in self.beliefs:
             kb_cnf.extend(to_cnf(b))
         
-        # Check entailment using resolution
+        # check entailment using resolution
         return check_entailment(kb_cnf, belief)
     
     def display(self):
@@ -170,64 +161,54 @@ class BeliefBase:
         
         return priority
     
-    def _find_remainders(self, belief):
+    def _find_remainders(self, belief: str) -> List[List[str]]:
         """
         Find all maximal subsets of the belief base that don't entail the belief.
-        
-        Args:
-            belief (str): The belief to find remainders for
-            
-        Returns:
-            list: List of remainders (each is a list of beliefs)
         """
         remainders = []
         
-        # Generate all possible subsets of the beliefs
+        # generate all possible subsets of the beliefs
         for i in range(len(self.beliefs), 0, -1):
             for subset in combinations(self.beliefs, i):
                 subset_list = list(subset)
                 
-                # Check if this subset entails the belief
+                # check if this subset entails the belief
                 kb_cnf = []
                 for b in subset_list:
                     kb_cnf.extend(to_cnf(b))
                 
                 if not check_entailment(kb_cnf, belief):
-                    # This is a potential remainder
+                    # this is a potential remainder
                     remainders.append(subset_list)
             
-            # If we found remainders at this level, stop looking
+            # if we found remainders at this level, stop looking
             if remainders:
                 break
-        
+            
         return remainders
     
-    def _select_remainder(self, remainders):
+    def _select_remainder(self, remainders: List[List[str]]) -> List[List[str]]:
         """
         Select a remainder based on priorities.
-        
-        Args:
-            remainders (list): List of remainders to select from
-            
-        Returns:
-            list: The selected remainder
         """
         if not remainders:
             return []
         
-        # Calculate total priority for each remainder
+        # calculate total priority for each remainder
         remainder_priorities = {}
         for i, remainder in enumerate(remainders):
             total_priority = sum(self.priorities.get(belief, 0) for belief in remainder)
             remainder_priorities[i] = total_priority
         
-        # Select the remainder with the highest total priority
+        # select the remainder with the highest total priority
         selected_index = max(remainder_priorities, key=remainder_priorities.get)
         
         return remainders[selected_index]
     
-    def _update_priorities(self):
-        """Update the priorities dictionary to only contain current beliefs."""
+    def _update_priorities(self) -> None:
+        """
+        Update the priorities dictionary to only contain current beliefs.
+        """
         new_priorities = {}
         for belief in self.beliefs:
             if belief in self.priorities:

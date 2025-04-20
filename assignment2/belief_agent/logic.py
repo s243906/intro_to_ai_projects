@@ -2,7 +2,7 @@
 Logic module for belief revision.
 Handles propositional logic operations including CNF conversion and resolution.
 """
-from typing import Union
+from typing import Union, List, Tuple
 
 def parse_formula(formula: str) -> Union[str, None]:
     """
@@ -43,15 +43,11 @@ def is_literal(formula: str) -> bool:
     
     return False
 
-def negate_formula(formula):
+def negate_formula(formula: str) -> str:
     """
     Negate a formula.
-    
-    Args:
-        formula (str): The formula to negate
-        
-    Returns:
-        str: The negated formula
+    Note: the difference between this func and negate_literal
+    is the () that we wrap the formula in when returning.
     """
     if is_literal(formula):
         if formula.startswith('~'):
@@ -61,31 +57,24 @@ def negate_formula(formula):
     
     return f"~({formula})"
 
-def to_cnf(formula):
+def to_cnf(formula: str) -> List[List[str]]:
     """
     Convert a formula to Conjunctive Normal Form (CNF).
     
     This is a simplified version that handles basic propositional logic.
-    For more complex formulas, a full CNF conversion algorithm would be needed.
-    
-    Args:
-        formula (str): The formula to convert
-        
-    Returns:
-        list: A list of clauses in CNF, where each clause is a list of literals
     """
-    # Handle literals directly
+    # handle literals directly
     if is_literal(formula):
         return [[formula]]
     
-    # Basic processing for simple conjunctions and disjunctions
+    # case 1: if conjunction
     if "&" in formula:
-        # Split by conjunction
         parts = formula.split("&")
         result = []
+
         for part in parts:
             part = part.strip()
-            # Remove surrounding parentheses if present
+            # remove parentheses if exists
             if part.startswith('(') and part.endswith(')'):
                 part = part[1:-1].strip()
             
@@ -93,13 +82,12 @@ def to_cnf(formula):
             result.extend(cnf_part)
         return result
     
+    # case 2: if disjunction
     if "|" in formula:
-        # Split by disjunction
         parts = formula.split("|")
         clause = []
         for part in parts:
             part = part.strip()
-            # Remove surrounding parentheses if present
             if part.startswith('(') and part.endswith(')'):
                 part = part[1:-1].strip()
             
@@ -108,7 +96,8 @@ def to_cnf(formula):
         
         return [clause] if clause else []
     
-    # Handle negations with De Morgan's laws
+    # case 3: negations
+    # we deal with them using De Morgan's laws
     if formula.startswith('~('):
         inner = formula[2:-1].strip()
         if "&" in inner:
@@ -135,18 +124,13 @@ def to_cnf(formula):
         new_formula = f"~({left})|({right})"
         return to_cnf(new_formula)
     
-    # If we can't handle it, return an empty result
+    # return empty if not able to convert
     print(f"Could not convert to CNF: {formula}")
     return []
 
-def resolve(clause1, clause2):
+def resolve(clause1: List[str], clause2: List[str]) -> Tuple[bool, str]:
     """
     Apply resolution to two clauses.
-    
-    Args:
-        clause1 (list): First clause as a list of literals
-        clause2 (list): Second clause as a list of literals
-        
     Returns:
         tuple: (bool, list) - Whether resolution was successful, and the resulting clause
     """
@@ -162,72 +146,60 @@ def resolve(clause1, clause2):
     
     return False, []
 
-def negate_literal(literal):
+def negate_literal(literal: str) -> str:
     """
     Negate a literal.
-    
-    Args:
-        literal (str): The literal to negate
-        
-    Returns:
-        str: The negated literal
     """
     if literal.startswith('~'):
         return literal[1:]
     else:
         return f"~{literal}"
 
-def check_entailment(knowledge_base, query):
+def check_entailment(knowledge_base: List[List[str]], query: str) -> bool:
     """
     Check if a query is entailed by the knowledge base using resolution.
-    
-    Args:
-        knowledge_base (list): List of CNF clauses
-        query (str): The query formula
-        
-    Returns:
-        bool: True if the query is entailed, False otherwise
     """
-    # Convert query to CNF
-    query_cnf = to_cnf(query)
-    
-    # For entailment check, we add the negation of the query to the KB
+    # for entailment check, we add the negation of the query to the KB
     # and check for unsatisfiability (which proves entailment)
     negated_query = negate_formula(query)
     negated_query_cnf = to_cnf(negated_query)
     
-    # Create a combined set of clauses
+    # create a combined set of clauses
+    # concatenate existing clauses from KB with new one(s)
     clauses = knowledge_base.copy()
     for clause in negated_query_cnf:
         if clause not in clauses:
             clauses.append(clause)
     
-    # Apply resolution until we derive the empty clause or can't resolve further
+    # apply resolution until we derive the empty clause or can't resolve further
     resolved_clauses = []
     while True:
         new_clause_added = False
         
-        # Generate all pairs of clauses to attempt resolution
-        for i in range(len(clauses)):
-            for j in range(i + 1, len(clauses)):
-                success, resolved = resolve(clauses[i], clauses[j])
-                
+        # generate all pairs of clauses to attempt resolution
+        for i, clause_i in enumerate(clauses):
+            for j, clause_j in enumerate(clauses[i+1:], i+1):
+                success, resolved = resolve(clause_i, clause_j)
+                print(clause_i, clause_j, success, resolved)
+                 
                 if success:
-                    # If we derive the empty clause, the KB entails the query
+                    # if we derive the empty clause, the KB entails the query
+                    # if negation leads to a contradiction (empty clause), it means:
+                    # the KB and the negation of the query cannot be true simultaneously -> entailment
                     if not resolved:
                         return True
                     
-                    # Add the new clause if we haven't seen it before
+                    # add the new clause if we haven't seen it before
                     if resolved not in clauses and resolved not in resolved_clauses:
                         resolved_clauses.append(resolved)
                         new_clause_added = True
         
-        # Add all new clauses to the set of clauses
+        # add all new clauses to the set of clauses
         for clause in resolved_clauses:
             if clause not in clauses:
                 clauses.append(clause)
         resolved_clauses = []
         
-        # If no new clauses were added, we're done
+        # if no new clauses were added, we're done
         if not new_clause_added:
             return False

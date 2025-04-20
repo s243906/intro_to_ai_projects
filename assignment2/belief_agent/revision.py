@@ -5,6 +5,7 @@ Implements the AGM belief revision operations.
 
 from logic import parse_formula, to_cnf, negate_formula
 from belief_base import BeliefBase
+from typing import Dict
 
 class BeliefRevision:
     """
@@ -22,16 +23,9 @@ class BeliefRevision:
         return belief_base.expand(belief)
     
     @staticmethod
-    def contract(belief_base, belief):
+    def contract(belief_base: BeliefBase, belief: str) -> bool:
         """
         Contract the belief base to remove a belief.
-        
-        Args:
-            belief_base: The belief base to contract
-            belief (str): The belief to remove
-            
-        Returns:
-            bool: True if successful, False otherwise
         """
         return belief_base.contract(belief)
     
@@ -39,24 +33,18 @@ class BeliefRevision:
     def revise(belief_base: BeliefBase, belief: str) -> bool:
         """
         Revise the belief base with a new belief.
-        
-        This implements the Levi Identity: K * A = (K ÷ ¬A) + A
-        (Revision equals contraction by the negation, followed by expansion)
-        TODO: Investigate Levi Identitys
+        This implements the Levi Identity: K * A = (K ÷ ¬A) + A (slides 10 page 38)
+        Revising a belief base with a new belief includes:
+        1. Checking if the new belief is consistent with the existing beliefs 
+        2. If it is consistent, simply adding it (expansion)
+        3. If it's inconsistent, removing the minimal set of exist. beliefs that conflict with the new belief (contraction), and then adds the new belief
         """
         return belief_base.revise(belief)
     
     @staticmethod
-    def verify_agm_postulates(belief_base, belief):
+    def verify_agm_postulates(belief_base: BeliefBase, belief: str) -> Dict[str, str]:
         """
         Verify that the belief revision operations satisfy the AGM postulates.
-        
-        Args:
-            belief_base: The belief base to verify
-            belief (str): The belief to use for verification
-            
-        Returns:
-            dict: Results of the verification
         """
         results = {}
         parsed_belief = parse_formula(belief)
