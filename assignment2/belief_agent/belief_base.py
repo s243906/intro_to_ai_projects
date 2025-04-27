@@ -22,7 +22,7 @@ class BeliefBase:
         self.priorities = {}  # Maps beliefs to priority values
         self.next_priority = 1.0  # Priority counter
         
-    def add_belief(self, belief: str) -> bool:
+    def add_belief(self, belief: str, display: bool = True) -> bool:
         """
         Add a belief to the belief base (expansion).
         """
@@ -39,7 +39,9 @@ class BeliefBase:
             priority = self._calculate_priority(parsed_belief)
             self.priorities[parsed_belief] = priority
             
-            print(f"Added belief: {parsed_belief} with priority {priority}")
+            if display:
+                print(f"Added belief: {parsed_belief} with priority {priority}")
+                
             return True
         
         return False

@@ -67,7 +67,8 @@ def main():
             results = revision.verify_agm_postulates(belief_base, belief)
             print("\nAGM Postulates Verification:")
             for postulate, result in results.items():
-                print(f"  {postulate}: {'Satisfied' if result is True else 'Not satisfied' if result is False else result}")
+                result_text = "Satisfied" if result is True else "Not satisfied" if result is False else result
+                print(f"  {postulate}: {result_text}")
                 
         elif choice == "7":
             print("Thank you for using the Belief Revision System. Goodbye!")

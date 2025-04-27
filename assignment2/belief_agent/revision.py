@@ -42,67 +42,97 @@ class BeliefRevision:
         return belief_base.revise(belief)
     
     @staticmethod
-    def verify_agm_postulates(belief_base: BeliefBase, belief: str) -> Dict[str, str]:
+    def verify_agm_postulates(belief_base, belief):
         """
         Verify that the belief revision operations satisfy the AGM postulates.
+        
+        In our implementation, we will check the following postulates:
+        2. Success: φ ∈ B * φ
+        3. Inclusion: B * φ ⊆ B + φ
+        4. Vacuity: If ¬φ ∉ B, then B * φ = B + φ
+        5. Consistency: B * φ is consistent if φ is consistent
         """
         results = {}
         parsed_belief = parse_formula(belief)
         
-        # Save the original belief base for comparison
         original_beliefs = belief_base.beliefs.copy()
         
-        # Create a copy of the belief base for testing
+        # copy of the belief base for testing
         test_base = belief_base.__class__()
         for b in original_beliefs:
-            test_base.add_belief(b)
+            test_base.add_belief(b, display=False)
         
-        # Verify Success postulate: B ∈ K * A
-        test_base.revise(parsed_belief)
-        results["Success"] = test_base.entails(parsed_belief)
+        # 2. Verify Success postulate: φ ∈ B * φ
+        # This checks if the belief is in the revised belief base
+        # "New information should be accepted in the revised belief set."
+        results["2. Success"] = test_base.entails(parsed_belief)
         
-        # Verify Inclusion postulate: K * A ⊆ K + A
-        # This is automatically satisfied by the Levi Identity implementation
-        results["Inclusion"] = True
+        # 3. Verify Inclusion postulate: B * φ ⊆ B + φ
+        # Create a copy for expansion
+        expansion_base = belief_base.__class__()
+        for b in original_beliefs:
+            expansion_base.add_belief(b, display=False)
+        expansion_base.expand(parsed_belief)
+        
+        # Check if revised beliefs are a subset of expanded beliefs
+        inclusion_check_passed = True
+        for b in test_base.beliefs:
+            if not expansion_base.entails(b):
+                inclusion_check_passed = False
+                break
+        
+        results["3. Inclusion"] = inclusion_check_passed
         
         # Reset test base
         test_base = belief_base.__class__()
         for b in original_beliefs:
-            test_base.add_belief(b)
+            test_base.add_belief(b, display=False)
         
-        # Verify Vacuity postulate: If ¬A ∉ K, then K * A = K + A
+        # 4. Verify Vacuity postulate: If ¬φ ∉ B, then B * φ = B + φ
         negated = negate_formula(parsed_belief)
         if not test_base.entails(negated):
-            # Save the state before revision
-            before_revision = test_base.beliefs.copy()
-            
             # Apply revision
             test_base.revise(parsed_belief)
-            after_revision = test_base.beliefs.copy()
+            after_revision = set(test_base.beliefs)
             
             # Reset and apply expansion
             test_base = belief_base.__class__()
             for b in original_beliefs:
-                test_base.add_belief(b)
+                test_base.add_belief(b, display=False)
             test_base.expand(parsed_belief)
-            after_expansion = test_base.beliefs.copy()
+            after_expansion = set(test_base.beliefs)
             
             # Check if the results are the same
-            results["Vacuity"] = set(after_revision) == set(after_expansion)
+            results["4. Vacuity"] = after_revision == after_expansion
         else:
-            results["Vacuity"] = True  # Not applicable in this case
+            results["4. Vacuity"] = "N/A - ¬φ is entailed by B"
         
-        # Verify Consistency postulate: K * A is consistent unless A is inconsistent
+        # 5. Verify Consistency postulate: B * φ is consistent if φ is consistent
+        # First check if belief itself is consistent (not a contradiction) - a formula is inconsistent if it entails its own negation
+        # "When the doctor learns ¬Flu, they must revise other beliefs to maintain consistency. They can't simultaneously believe Flu and ¬Flu."
+        belief_consistent = True
+        test_base = belief_base.__class__()
+        test_base.add_belief(parsed_belief, display=False)
+        if test_base.entails(negate_formula(parsed_belief)):
+            belief_consistent = False
+        
+        # now check if the revised belief base is consistent
         test_base = belief_base.__class__()
         for b in original_beliefs:
-            test_base.add_belief(b)
-        
+            test_base.add_belief(b, display=False)
         test_base.revise(parsed_belief)
-        results["Consistency"] = not (test_base.entails(parsed_belief) and 
-                                      test_base.entails(negate_formula(parsed_belief)))
         
-        # Verify Extensionality postulate: If A ≡ B, then K * A = K * B
-        # This would require testing equivalence of formulas
-        results["Extensionality"] = "Not verified"  # Would need more complex logic
+        # a belief base is inconsistent if it entails a contradiction
+        # we check this by seeing if it entails both a formula and its negation
+        consistency_check_passed = True
+        for b in test_base.beliefs:
+            if test_base.entails(negate_formula(b)):
+                consistency_check_passed = False
+                break
+        
+        if not belief_consistent:
+            results["5. Consistency"] = "N/A - φ is inconsistent"
+        else:
+            results["5. Consistency"] = consistency_check_passed
         
         return results

@@ -180,7 +180,6 @@ def check_entailment(knowledge_base: List[List[str]], query: str) -> bool:
         for i, clause_i in enumerate(clauses):
             for j, clause_j in enumerate(clauses[i+1:], i+1):
                 success, resolved = resolve(clause_i, clause_j)
-                print(clause_i, clause_j, success, resolved)
                  
                 if success:
                     # if we derive the empty clause, the KB entails the query
