@@ -2,10 +2,8 @@
 Revision module for belief revision.
 Implements the AGM belief revision operations.
 """
-
 from logic import parse_formula, to_cnf, negate_formula
 from belief_base import BeliefBase
-from typing import Dict
 
 class BeliefRevision:
     """

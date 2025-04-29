@@ -20,6 +20,7 @@ _Contraction means "removing a belief" - but not by simply deleting statements. 
 
 _Remainders are maximal subsets of your belief base that don't entail the belief you want to remove. Think of them as "what's left after removing minimal information to avoid entailing φ."_
 
+_In entailment checking, resolution works as a contradiction detector._
 
 ## Implementation Structure
 

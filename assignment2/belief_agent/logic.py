@@ -112,7 +112,7 @@ def to_cnf(formula: str) -> List[List[str]]:
             new_formula = "&".join([f"~({part.strip()})" for part in parts])
             return to_cnf(new_formula)
     
-    # Handle implications: A => B = ~A | B
+    # handle implications: A => B = ~A | B
     if "=>" in formula:
         parts = formula.split("=>")
         if len(parts) != 2:
@@ -128,19 +128,17 @@ def to_cnf(formula: str) -> List[List[str]]:
     print(f"Could not convert to CNF: {formula}")
     return []
 
-def resolve(clause1: List[str], clause2: List[str]) -> Tuple[bool, str]:
+def resolve(clause1: List[str], clause2: List[str]) -> Tuple[bool, List[str]]:
     """
     Apply resolution to two clauses.
-    Returns:
-        tuple: (bool, list) - Whether resolution was successful, and the resulting clause
     """
-    # Try to find complementary literals
+    # try to find complementary literals
     for lit1 in clause1:
         for lit2 in clause2:
             if (lit1 == negate_literal(lit2)) or (negate_literal(lit1) == lit2):
-                # Create a new clause by resolving the two clauses
+                # create a new clause by resolving the two clauses
                 resolved = [l for l in clause1 if l != lit1] + [l for l in clause2 if l != lit2]
-                # Remove duplicates
+                # remove duplicates
                 resolved = list(set(resolved))
                 return True, resolved
     
@@ -180,7 +178,6 @@ def check_entailment(knowledge_base: List[List[str]], query: str) -> bool:
         for i, clause_i in enumerate(clauses):
             for j, clause_j in enumerate(clauses[i+1:], i+1):
                 success, resolved = resolve(clause_i, clause_j)
-                 
                 if success:
                     # if we derive the empty clause, the KB entails the query
                     # if negation leads to a contradiction (empty clause), it means:

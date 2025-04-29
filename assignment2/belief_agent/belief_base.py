@@ -9,18 +9,13 @@ from logic import parse_formula, to_cnf, check_entailment, negate_formula, is_li
 class BeliefBase:
     """
     A class representing a belief base that can be revised.
-    
-    Attributes:
-        beliefs (list): List of belief formulas in the belief base
-        priorities (dict): Dictionary mapping beliefs to their priority values
-        next_priority (float): The next priority value to assign
     """
     
     def __init__(self):
         """Initialize an empty belief base."""
-        self.beliefs = []  # List of beliefs in string form
-        self.priorities = {}  # Maps beliefs to priority values
-        self.next_priority = 1.0  # Priority counter
+        self.beliefs = []  # list of beliefs in string form
+        self.priorities = {}  # maps beliefs to priority values
+        self.next_priority = 1.0  # priority counter
         
     def add_belief(self, belief: str, display: bool = True) -> bool:
         """
@@ -142,10 +137,10 @@ class BeliefBase:
     def _calculate_priority(self, belief: str) -> float:
         """
         Calculate priority value for a belief based on its complexity.
+        Note: This is a simple heuristic and can be improved.
         """
         priority = self.next_priority
-
-
+        
         # this increases by 0.1 for each new belief to ensure newer beliefs have slightly higher priority than older ones
         # (if all else is equal)
         self.next_priority += 0.1
