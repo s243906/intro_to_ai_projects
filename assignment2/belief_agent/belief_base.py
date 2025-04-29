@@ -53,7 +53,7 @@ class BeliefBase:
         """
         return self.add_belief(belief)
     
-    def revise(self, belief: str) -> None:
+    def revise(self, belief: str, display: bool = True) -> None:
         """
         Revise the belief base with a new belief.
         This ensures the new belief is accepted while maintaining consistency.
@@ -65,12 +65,14 @@ class BeliefBase:
         
         # if the belief is already entailed, no need to revise
         if self.entails(parsed_belief):
-            print(f"Belief '{parsed_belief}' is already entailed by the belief base.")
+            if display:
+                print(f"Belief '{parsed_belief}' is already entailed by the belief base - no need to revise.")
             return True
         
         # if the negation of the belief is entailed, contraction is needed
         if self.entails(negate_formula(parsed_belief)):
-            print(f"The negation of '{parsed_belief}' is entailed. Contraction needed.")
+            if display:
+                print(f"The negation of '{parsed_belief}' is entailed. Contraction needed.")
             self.contract(parsed_belief)
         
         # expand with the new belief

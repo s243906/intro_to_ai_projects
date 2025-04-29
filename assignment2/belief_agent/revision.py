@@ -92,7 +92,7 @@ class BeliefRevision:
         negated = negate_formula(parsed_belief)
         if not test_base.entails(negated):
             # Apply revision
-            test_base.revise(parsed_belief)
+            test_base.revise(parsed_belief, display=False)
             after_revision = set(test_base.beliefs)
             
             # Reset and apply expansion
@@ -120,7 +120,7 @@ class BeliefRevision:
         test_base = belief_base.__class__()
         for b in original_beliefs:
             test_base.add_belief(b, display=False)
-        test_base.revise(parsed_belief)
+        test_base.revise(parsed_belief, display=False)
         
         # a belief base is inconsistent if it entails a contradiction
         # we check this by seeing if it entails both a formula and its negation
