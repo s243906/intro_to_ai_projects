@@ -186,23 +186,47 @@ class BeliefBase:
             
         return remainders
     
-    def _select_remainder(self, remainders: List[List[str]]) -> List[List[str]]:
+    def _select_remainder(self, remainders: List[List[str]]) -> List[str]:
         """
-        Select a remainder based on priorities.
+        Select remainders based on priorities and take their intersection.
+        Implements partial meet contraction.
         """
         if not remainders:
             return []
+
+        print(f"Found {len(remainders)} potential remainders for contraction.")
         
         # calculate total priority for each remainder
         remainder_priorities = {}
         for i, remainder in enumerate(remainders):
             total_priority = sum(self.priorities.get(belief, 0) for belief in remainder)
+            print(f"Remainder {i}: {remainder} has total priority {total_priority}")
             remainder_priorities[i] = total_priority
         
-        # select the remainder with the highest total priority
-        selected_index = max(remainder_priorities, key=remainder_priorities.get)
+        # get the average priority - this is our selection function
+        avg_priority = sum(remainder_priorities.values()) / len(remainder_priorities)
         
-        return remainders[selected_index]
+        # select all remainders with above-average priority
+        selected_remainders = [remainders[i] for i, priority in remainder_priorities.items() 
+                            if priority >= avg_priority]
+        
+        print(f"Selected {len(selected_remainders)} remainders for intersection")
+        
+        # in case where no remainders were selected, return the highest priority one
+        if not selected_remainders:
+            selected_index = max(remainder_priorities, key=remainder_priorities.get)
+            return remainders[selected_index]
+        
+        # take the intersection of all selected remainders
+        if len(selected_remainders) == 1:
+            return selected_remainders[0]
+        
+        # find beliefs that are in all selected remainders
+        intersection = set(selected_remainders[0])
+        for remainder in selected_remainders[1:]:
+            intersection = intersection.intersection(set(remainder))
+        
+        return list(intersection)
     
     def _update_priorities(self) -> None:
         """
