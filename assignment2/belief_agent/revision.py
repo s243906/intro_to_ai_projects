@@ -89,33 +89,35 @@ class BeliefRevision:
 
         results["3. Inclusion"] = inclusion_check_passed
         
-        # Reset test base
+        # reset test base
         test_base = belief_base.__class__()
         for b in original_beliefs:
             test_base.add_belief(b, display=False)
         
         # 4. Verify Vacuity postulate: If ¬φ ∉ B, then B * φ = B + φ
+        # "If the new belief doesn't contradict the existing beliefs, then revision should be the same as expansion."
         negated = negate_formula(parsed_belief)
         if not test_base.entails(negated):
-            # Apply revision
+            # apply revision
             test_base.revise(parsed_belief, display=False)
             after_revision = set(test_base.beliefs)
             
-            # Reset and apply expansion
+            # reset and apply expansion
             test_base = belief_base.__class__()
             for b in original_beliefs:
                 test_base.add_belief(b, display=False)
             test_base.expand(parsed_belief)
             after_expansion = set(test_base.beliefs)
             
-            # Check if the results are the same
+            # check if the results are the same
             results["4. Vacuity"] = after_revision == after_expansion
         else:
             results["4. Vacuity"] = "N/A - ¬φ is entailed by B"
         
         # 5. Verify Consistency postulate: B * φ is consistent if φ is consistent
-        # First check if belief itself is consistent (not a contradiction) - a formula is inconsistent if it entails its own negation
+        # first check if belief itself is consistent (not a contradiction) - a formula is inconsistent if it entails its own negation
         # "When the doctor learns ¬Flu, they must revise other beliefs to maintain consistency. They can't simultaneously believe Flu and ¬Flu."
+        # "ensures that the revision operation maintains consistency in the belief base when the new belief itself is consistent."
         belief_consistent = True
         test_base = belief_base.__class__()
         test_base.add_belief(parsed_belief, display=False)
