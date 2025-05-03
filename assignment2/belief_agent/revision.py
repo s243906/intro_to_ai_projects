@@ -61,24 +61,32 @@ class BeliefRevision:
             test_base.add_belief(b, display=False)
         
         # 2. Verify Success postulate: φ ∈ B * φ
-        # This checks if the belief is in the revised belief base
+        # this checks if the belief is in the revised belief base
         # "New information should be accepted in the revised belief set."
+        test_base.revise(parsed_belief, display=False)
         results["2. Success"] = test_base.entails(parsed_belief)
         
         # 3. Verify Inclusion postulate: B * φ ⊆ B + φ
-        # Create a copy for expansion
+        # "B revised with φ should be a subset of B expanded with φ."
+        # create a base for revision
+        revision_base = belief_base.__class__()
+        for b in original_beliefs:
+            revision_base.add_belief(b, display=False)
+        revision_base.revise(parsed_belief)
+
+        # create a base for expansion
         expansion_base = belief_base.__class__()
         for b in original_beliefs:
             expansion_base.add_belief(b, display=False)
         expansion_base.expand(parsed_belief)
-        
-        # Check if revised beliefs are a subset of expanded beliefs
+
+        # check if revised beliefs are a subset of expanded beliefs
         inclusion_check_passed = True
-        for b in test_base.beliefs:
+        for b in revision_base.beliefs:
             if not expansion_base.entails(b):
                 inclusion_check_passed = False
                 break
-        
+
         results["3. Inclusion"] = inclusion_check_passed
         
         # Reset test base
