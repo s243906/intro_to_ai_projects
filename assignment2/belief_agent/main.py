@@ -13,8 +13,7 @@ def display_menu():
     print("3. Contract belief base")
     print("4. Display belief base")
     print("5. Check entailment")
-    print("6. Verify AGM postulates")
-    print("7. Exit")
+    print("6. Exit")
     print("===================================")
 
 def main():
@@ -29,7 +28,7 @@ def main():
     
     while True:
         display_menu()
-        choice = input("Enter your choice (1-7): ").strip()
+        choice = input("Enter your choice (1-6): ").strip()
         
         if choice == "1":
             # Simply adds a new belief to your belief base without checking for conflicts.
@@ -68,15 +67,6 @@ def main():
                 print(f"The belief base does NOT entail '{belief}'.")
                 
         elif choice == "6":
-            # Tests whether belief revision operations satisfy theoretical requirements for rational belief revision.
-            belief = input("Enter a belief to verify AGM postulates: ").strip()
-            results = revision.verify_agm_postulates(belief_base, belief)
-            print("\nAGM Postulates Verification:")
-            for postulate, result in results.items():
-                result_text = "Satisfied" if result is True else "Not satisfied" if result is False else result
-                print(f"  {postulate}: {result_text}")
-                
-        elif choice == "7":
             print("Thank you for using the Belief Revision System. Goodbye!")
             break
             
