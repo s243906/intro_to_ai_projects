@@ -40,19 +40,20 @@ class BeliefRevision:
         return belief_base.revise(belief)
     
     @staticmethod
-    def verify_agm_postulates(belief_base, belief):
+    def verify_agm_postulates(belief_base, belief, belief_base_2=None, belief_2=None):
         """
-        Verify that the belief revision operations satisfy the AGM postulates.
+        Verify that the belief revision operations satisfies the following AGM postulates:
         
-        In our implementation, we will check the following postulates:
+        1. Extensionality: If (φ <<>> Ψ) ∈ Cn(∅), then B * φ = B * Ψ
         2. Success: φ ∈ B * φ
         3. Inclusion: B * φ ⊆ B + φ
         4. Vacuity: If ¬φ ∉ B, then B * φ = B + φ
         5. Consistency: B * φ is consistent if φ is consistent
         """
         results = {}
+
         parsed_belief = parse_formula(belief)
-        
+
         original_beliefs = belief_base.beliefs.copy()
         
         # copy of the belief base for testing
@@ -60,6 +61,41 @@ class BeliefRevision:
         for b in original_beliefs:
             test_base.add_belief(b, display=False)
         
+        # 1. Verify Extensionality postulate: If (φ <<>> Ψ) ∈ Cn(∅), then B * φ = B * Ψ
+        # this checks if the belief is equivalent to another belief in the base
+        # "If two beliefs are equivalent, revising with one should be the same as revising with the other."
+        if belief_2 and belief_base_2:
+
+            # Parse and copy belief base 2 for testing
+            parsed_belief_2 = parse_formula(belief_2)
+
+            original_beliefs_2 = belief_base_2.beliefs.copy()
+
+            test_base_2 = belief_base_2.__class__()
+            for b_2 in original_beliefs_2:
+                test_base_2.add_belief(b_2, display=False)
+
+            # Revise belief base with belief
+            test_base.revise(parsed_belief)
+            
+            # Revise belief_base_2 with belief_2
+            test_base_2.revise(parsed_belief_2)
+
+            # If the resulting beliefs in both belief bases are the same, then extensionality is satisfied
+            if test_base.beliefs == test_base_2.beliefs:
+                results["1. Extensionality"] = True
+            else:
+                results["1. Extensionality"] = False
+
+        else:
+            results["1. Extensionality"] = "N/A"
+
+
+        # reset test base
+        test_base = belief_base.__class__()
+        for b in original_beliefs:
+            test_base.add_belief(b, display=False)
+
         # 2. Verify Success postulate: φ ∈ B * φ
         # this checks if the belief is in the revised belief base
         # "New information should be accepted in the revised belief set."
