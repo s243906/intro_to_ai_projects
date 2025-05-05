@@ -72,10 +72,14 @@ def to_cnf(formula: str) -> List[List[str]]:
     
     # case 1: if conjunction
     if "&" in formula:
-        print(f'HOLY SHIT IM IN AND -- {formula}')
-
         parts = formula.split("&")
         result = []
+
+        #~(A & B) -> ~A | ~B
+        if formula.startswith("~(") and formula.count("(") == 1 and formula.count(")") == 1:
+            inner = formula[2:-1].strip()
+            if "~" not in inner:
+                return to_cnf(f"~{inner[0]}|~{inner[2]}")
 
         for part in parts:
             part = part.strip()
@@ -89,7 +93,12 @@ def to_cnf(formula: str) -> List[List[str]]:
     
     # case 2: if disjunction
     if "|" in formula:
-        print(f'HOLY SHIT IM IN OR -- {formula}')
+        #~(~A | ~B) -> A & B 
+        if formula.startswith("~(") and formula.count("(") == 1 and formula.count(")") == 1:
+            inner = formula[2:-1].strip()
+            if inner[0] == "~" and inner[3] == "~":
+                return to_cnf(f"{inner[1]}&{inner[4]}")
+
         parts = formula.split("|")
         clause = []
         for part in parts:
@@ -97,8 +106,6 @@ def to_cnf(formula: str) -> List[List[str]]:
 
             if part.startswith('(') and part.endswith(')'):
                 part = part[1:-1].strip()
-            
-            print(part, is_literal(part))
 
             if is_literal(part):
                 clause.append(part)                
@@ -108,7 +115,6 @@ def to_cnf(formula: str) -> List[List[str]]:
     # case 3: negations
     # we deal with them using De Morgan's laws
     if formula.startswith('~('):
-        print(f'HOLY SHIT IM IN NEGATIONS -- {formula}')
         inner = formula[2:-1].strip()
         if "&" in inner:
             # ~(A & B) = ~A | ~B
@@ -124,7 +130,6 @@ def to_cnf(formula: str) -> List[List[str]]:
     
     # handle implications: A => B = ~A | B
     if "=>" in formula:
-        print(f'HOLY SHIT IM IN IMPLICATIONS -- {formula}')
         parts = formula.split("=>")
         if len(parts) != 2:
             print(f"Invalid implication formula: {formula}")
@@ -172,7 +177,6 @@ def check_entailment(knowledge_base: List[List[str]], query: str) -> bool:
     # and check for unsatisfiability (which proves entailment)
     negated_query = negate_formula(query)
     negated_query_cnf = to_cnf(negated_query)
-    print(f'CONVERTED NEGATED QUERY {negated_query} TO CNF --> {negated_query_cnf}')
 
     # create a combined set of clauses
     # concatenate existing clauses from KB with new one(s)

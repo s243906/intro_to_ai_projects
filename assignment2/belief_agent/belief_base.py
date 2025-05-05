@@ -15,7 +15,6 @@ class BeliefBase:
         """Initialize an empty belief base."""
         self.beliefs = []  # list of beliefs in string form
         self.priorities = {}  # maps beliefs to priority values
-        self.next_priority = 1.0  # priority counter
         
     def add_belief(self, belief: str, display: bool = True) -> bool:
         """
@@ -41,12 +40,12 @@ class BeliefBase:
         
         return False
     
-    def expand(self, belief: str) -> bool:
+    def expand(self, belief: str, display: bool = False) -> bool:
         """
         Expand the belief base with a new belief.
         This is a simple addition without checking for consistency.
         """
-        return self.add_belief(belief)
+        return self.add_belief(belief, display=display)
     
     def revise(self, belief: str, display: bool = True) -> None:
         """
@@ -60,22 +59,20 @@ class BeliefBase:
         
         # if the belief is already entailed, no need to revise
         if self.entails(parsed_belief):
-            print('belief is entailed')
             if display:
                 print(f"Belief '{parsed_belief}' is already entailed by the belief base - no need to revise.")
             return True
         
         # if the negation of the belief is entailed, contraction is needed
-        else:
-            print('belief is contracted')
+        if self.entails(negate_formula(parsed_belief)):
             if display:
                 print(f"The negation of '{parsed_belief}' is entailed. Contraction needed.")
-            self.contract(parsed_belief)
+            self.contract(parsed_belief, display=display)
         
         # expand with the new belief
-        return self.add_belief(parsed_belief)
+        return self.add_belief(parsed_belief, display=display)
     
-    def contract(self, belief: str) -> bool:
+    def contract(self, belief: str, display: bool = True) -> bool:
         """
         Contract the belief base to remove a belief.
         Uses partial meet contraction based on priorities.
@@ -89,7 +86,8 @@ class BeliefBase:
         # let's say we want to contract r, and r is not entailed by our belief base (e.g. we have just p => q),
         # then our belief base already doesn't believe r. There's nothing to remove or change.
         if not self.entails(parsed_belief):
-            print(f"Belief '{parsed_belief}' is not entailed. No contraction needed.")
+            if display:
+                print(f"Belief '{parsed_belief}' is not entailed. NO contraction needed.")
             return True
         
         # find remainders (maximal subsets that don't entail the belief)
@@ -118,10 +116,8 @@ class BeliefBase:
         # convert belief base to CNF
         kb_cnf = []
         for b in self.beliefs:
-            print(f'CHECKING IF BELIEF {b} IS ENTAILED...CONVERTING TO CNF...')
             kb_cnf.extend(to_cnf(b))
         
-        print(f'BELIEF BASE IN CNF FORM(?) -- {kb_cnf}')
         # check entailment using resolution
         return check_entailment(kb_cnf, belief)
     
@@ -143,27 +139,25 @@ class BeliefBase:
         Calculate priority value for a belief based on its complexity.
         Note: This is a simple heuristic and can be improved.
         """
-        priority = self.next_priority
-        
-        # this increases by 0.1 for each new belief to ensure newer beliefs have slightly higher priority than older ones
-        # (if all else is equal)
-        self.next_priority += 0.1
-        
+        priority = 0.0
+
         if is_literal(belief):
             return priority
         
-        # more complex formulas get higher priority
+        # more complex formulas get higher priority, hence lower penalty value
+        if "~" in belief:
+            priority += 0.5
         if "&" in belief:
             priority += 1.0
         if "|" in belief:
-            priority += 0.5
+            priority += 1.5
         if "=>" in belief:
-            priority += 0.7
+            priority += 2.0
         if "<<>>" in belief:
-            priority += 1.2
+            priority += 2.5
         
         return priority
-    
+
     def _find_remainders(self, belief: str) -> List[List[str]]:
         """
         Find all maximal subsets of the belief base that don't entail the belief.
@@ -210,15 +204,15 @@ class BeliefBase:
         # get the average priority - this is our selection function
         avg_priority = sum(remainder_priorities.values()) / len(remainder_priorities)
         
-        # select all remainders with above-average priority
+        # select all remainders with under-average priority
         selected_remainders = [remainders[i] for i, priority in remainder_priorities.items() 
-                            if priority >= avg_priority]
+                            if priority <= avg_priority]
         
         print(f"Selected {len(selected_remainders)} remainders for intersection")
         
-        # in case where no remainders were selected, return the highest priority one
+        # in case where no remainders were selected, return the lowest priority one
         if not selected_remainders:
-            selected_index = max(remainder_priorities, key=remainder_priorities.get)
+            selected_index = min(remainder_priorities, key=remainder_priorities.get)
             return remainders[selected_index]
         
         # take the intersection of all selected remainders
