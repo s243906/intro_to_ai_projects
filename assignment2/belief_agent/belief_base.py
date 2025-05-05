@@ -15,6 +15,7 @@ class BeliefBase:
         """Initialize an empty belief base."""
         self.beliefs = []  # list of beliefs in string form
         self.priorities = {}  # maps beliefs to priority values
+        self.next_priority = 1.0  # priority counter
         
     def add_belief(self, belief: str, display: bool = True) -> bool:
         """
@@ -59,12 +60,14 @@ class BeliefBase:
         
         # if the belief is already entailed, no need to revise
         if self.entails(parsed_belief):
+            print('belief is entailed')
             if display:
                 print(f"Belief '{parsed_belief}' is already entailed by the belief base - no need to revise.")
             return True
         
         # if the negation of the belief is entailed, contraction is needed
-        if self.entails(negate_formula(parsed_belief)):
+        else:
+            print('belief is contracted')
             if display:
                 print(f"The negation of '{parsed_belief}' is entailed. Contraction needed.")
             self.contract(parsed_belief)
@@ -115,8 +118,10 @@ class BeliefBase:
         # convert belief base to CNF
         kb_cnf = []
         for b in self.beliefs:
+            print(f'CHECKING IF BELIEF {b} IS ENTAILED...CONVERTING TO CNF...')
             kb_cnf.extend(to_cnf(b))
         
+        print(f'BELIEF BASE IN CNF FORM(?) -- {kb_cnf}')
         # check entailment using resolution
         return check_entailment(kb_cnf, belief)
     
@@ -138,25 +143,27 @@ class BeliefBase:
         Calculate priority value for a belief based on its complexity.
         Note: This is a simple heuristic and can be improved.
         """
-        priority = 0.0
-
+        priority = self.next_priority
+        
+        # this increases by 0.1 for each new belief to ensure newer beliefs have slightly higher priority than older ones
+        # (if all else is equal)
+        self.next_priority += 0.1
+        
         if is_literal(belief):
             return priority
         
-        # more complex formulas get higher priority, hence lower penalty value
-        if "~" in belief:
-            priority += 0.5
+        # more complex formulas get higher priority
         if "&" in belief:
             priority += 1.0
         if "|" in belief:
-            priority += 1.5
+            priority += 0.5
         if "=>" in belief:
-            priority += 2.0
+            priority += 0.7
         if "<<>>" in belief:
-            priority += 2.5
+            priority += 1.2
         
         return priority
-
+    
     def _find_remainders(self, belief: str) -> List[List[str]]:
         """
         Find all maximal subsets of the belief base that don't entail the belief.
@@ -203,15 +210,15 @@ class BeliefBase:
         # get the average priority - this is our selection function
         avg_priority = sum(remainder_priorities.values()) / len(remainder_priorities)
         
-        # select all remainders with under-average priority
+        # select all remainders with above-average priority
         selected_remainders = [remainders[i] for i, priority in remainder_priorities.items() 
-                            if priority <= avg_priority]
+                            if priority >= avg_priority]
         
         print(f"Selected {len(selected_remainders)} remainders for intersection")
         
-        # in case where no remainders were selected, return the lowest priority one
+        # in case where no remainders were selected, return the highest priority one
         if not selected_remainders:
-            selected_index = min(remainder_priorities, key=remainder_priorities.get)
+            selected_index = max(remainder_priorities, key=remainder_priorities.get)
             return remainders[selected_index]
         
         # take the intersection of all selected remainders

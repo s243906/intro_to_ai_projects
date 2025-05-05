@@ -24,7 +24,7 @@ belief_base_2.expand("A=>B")
 
 
 # Verify AGM postulates
-# 
+print('\nVERIFYING AGM POSTULATES\n')
 results = revision.verify_agm_postulates(belief_base=belief_base, belief=belief, belief_base_2=belief_base_2, belief_2=belief_2)
 
 print("---"*50)
